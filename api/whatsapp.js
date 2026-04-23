@@ -1,13 +1,14 @@
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
+  const url = new URL(req.url, `http://${req.headers.host}`);
 
+  const mode = url.searchParams.get('hub.mode');
+  const token = url.searchParams.get('hub.verify_token');
+  const challenge = url.searchParams.get('hub.challenge');
+
+  if (req.method === 'GET') {
     if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
       return res.status(200).send(challenge);
     }
-
     return res.status(403).send('Forbidden');
   }
 
@@ -16,5 +17,5 @@ export default async function handler(req, res) {
     return res.status(200).json({ received: true });
   }
 
-  res.status(405).send('Method Not Allowed');
+  return res.status(405).send('Method Not Allowed');
 }
