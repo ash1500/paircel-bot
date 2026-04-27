@@ -25,7 +25,6 @@ export default async function handler(req, res) {
       }
 
       const from = message.from;
-
       if (!from) {
         return res.status(200).json({ received: true, skipped: 'no_sender' });
       }
@@ -37,34 +36,27 @@ export default async function handler(req, res) {
 
       if (incomingText.includes('ride') || incomingText === '1') {
         replyText =
-          `🚗 Paircel Ride\nPlease download the Paircel app to compare ride options:\n${appLink}`;
+          `🚗 Paircel Ride\nDownload the Paircel app to compare ride options:\n${appLink}`;
       } else if (incomingText.includes('delivery') || incomingText === '2') {
         replyText =
-          `📦 Paircel Delivery\nPlease download the Paircel app to book or manage delivery:\n${appLink}`;
-      } else if (
-        incomingText.includes('eats') ||
-        incomingText.includes('food') ||
-        incomingText === '3'
-      ) {
-        replyText =
-          `🍔 Paircel Eats\nPlease download the Paircel app to access Eats services:\n${appLink}`;
-      } else if (
-        incomingText.includes('download') ||
-        incomingText.includes('app') ||
-        incomingText === '5'
-      ) {
-        replyText =
-          `📲 Download Paircel\nGet the Paircel app here:\n${appLink}`;
+          `📦 Paircel Delivery\nDownload the Paircel app to book or manage deliveries:\n${appLink}`;
       } else if (
         incomingText.includes('support') ||
         incomingText.includes('help') ||
-        incomingText === '4'
+        incomingText === '3'
       ) {
         replyText =
           `🛟 Paircel Support\nPlease describe your issue, or download the app here:\n${appLink}`;
+      } else if (
+        incomingText.includes('download') ||
+        incomingText.includes('app') ||
+        incomingText === '4'
+      ) {
+        replyText =
+          `📲 Download Paircel\nGet the Paircel app here:\n${appLink}`;
       } else {
         replyText =
-          `Welcome to Paircel 🚀\n\nHow can I help you?\n\n1️⃣ Ride\n2️⃣ Delivery\n3️⃣ Eats\n4️⃣ Support\n5️⃣ Download App\n\n📲 Download Paircel:\n${appLink}`;
+          `Welcome to Paircel 🚀\n\nHow can I help you?\n\n1️⃣ Ride\n2️⃣ Delivery\n3️⃣ Support\n4️⃣ Download App\n\n📲 Download Paircel:\n${appLink}`;
       }
 
       const response = await fetch(
