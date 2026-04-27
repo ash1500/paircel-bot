@@ -7,27 +7,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  verify:
+    name: Verify Paircel Bot Source
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install Supabase CLI
-        run: npm install -g supabase
-
-      - name: Login to Supabase
-        run: supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Link project
-        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
-
-      - name: Set secrets
+      - name: Verify required files exist
         run: |
-          supabase secrets set TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-          supabase secrets set WHATSAPP_TOKEN=${{ secrets.WHATSAPP_TOKEN }}
-          supabase secrets set WHATSAPP_PHONE_NUMBER_ID=${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
-          supabase secrets set WHATSAPP_VERIFY_TOKEN=${{ secrets.WHATSAPP_VERIFY_TOKEN }}
+          test -f api/whatsapp.js
+          test -f README.md || true
+          echo "Paircel bot source verified."
 
-      - name: Deploy function
-        run: supabase functions deploy paircel-bot-webhooks --no-verify-jwt
+      - name: Confirm Vercel handles deployment
+        run: |
+          echo "No Supabase CLI is used."
+          echo "No Supabase Edge deployment is used."
+          echo "Production deployment is handled by Vercel from the main branch."
