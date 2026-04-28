@@ -1,153 +1,82 @@
 export default async function handler(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-
-  // =========================
-  // META VERIFICATION (GET)
-  // =========================
   if (req.method === "GET") {
-    const mode = url.searchParams.get("hub.mode");
-    const token = url.searchParams.get("hub.verify_token");
-    const challenge = url.searchParams.get("hub.challenge");
-
+    const { ["hub.mode"]: mode, ["hub.verify_token"]: token, ["hub.challenge"]: challenge } = req.query;
     if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
       return res.status(200).send(challenge);
     }
-
-    return res.status(403).send("Forbidden");
+    return res.status(403).end();
   }
 
-  // =========================
-  // MAIN BOT (POST)
-  // =========================
-  if (req.method === "POST") {
-    try {
-      const body = req.body;
-      console.log("Incoming webhook:", JSON.stringify(body));
+  if (req.method !== "POST") return res.status(405).end();
 
-      const entry = body?.entry?.[0]?.changes?.[0]?.value;
-      const message = entry?.messages?.[0];
+  try {
+    const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
+    const msg = entry?.messages?.[0];
+    if (!msg) return res.status(200).json({ ok: true });
 
-      if (!message) {
-        return res.status(200).json({ ok: true, skip: "no_message" });
-      }
+    const from = msg.from;
+    const text =
+      msg.text?.body ||
+      msg.button?.text ||
+      msg.interactive?.button_reply?.title ||
+      "";
 
-      const from = message.from;
-      const text =
-        message.text?.body ||
-        message.button?.text ||
-        message.interactive?.button_reply?.title ||
-        "";
+    const t = text.toLowerCase().trim();
 
-      if (!from || !text) {
-        return res.status(200).json({ ok: true, skip: "invalid_input" });
-      }
+    let reply = "";
 
-      const userText = text.toLowerCase().trim();
+    if (t === "1" || t.includes("ride")) {
+      reply = `🚗 Ride, simplified
 
-      // =========================
-      // MENU TEXT (CLEAN UX)
-      // =========================
-      const menuText = `🚀 Welcome to Paircel
+Paircel helps you choose better before you book.
 
-How can we help you?
+📲 https://paircel.com/get`;
+    } else if (t === "2" || t.includes("delivery")) {
+      reply = `📦 Delivery, made easy
+
+Send packages with better options — all in one app.
+
+📲 https://paircel.com/get`;
+    } else if (t === "3" || t.includes("support")) {
+      reply = `🛟 Support
+
+Reply with your issue or visit:
+https://paircel.com`;
+    } else if (t === "4" || t.includes("download")) {
+      reply = `📲 Get Paircel
+
+https://paircel.com/get`;
+    } else {
+      reply = `🚀 Paircel
+
+Compare rides & deliveries — smarter.
 
 1️⃣ Ride  
 2️⃣ Delivery  
 3️⃣ Support  
-4️⃣ Download App
-
-Reply with a number.`;
-
-      // =========================
-      // ROUTING
-      // =========================
-      let replyText = "";
-
-      if (
-        userText === "menu" ||
-        userText === "hi" ||
-        userText === "hello" ||
-        userText === "start"
-      ) {
-        replyText = menuText;
-      }
-
-      else if (userText === "1" || userText.includes("ride")) {
-        replyText = `🚗 Paircel Ride
-
-Compare ride options instantly in the Paircel app.
-
-Download:
-https://paircel.com/get`;
-      }
-
-      else if (userText === "2" || userText.includes("delivery")) {
-        replyText = `📦 Paircel Delivery
-
-Send packages fast & secure.
-
-Get started:
-https://paircel.com/get`;
-      }
-
-      else if (userText === "3" || userText.includes("support")) {
-        replyText = `🛟 Paircel Support
-
-We're here to help.
-
-Visit:
-https://paircel.com
-
-Or reply with your issue.`;
-      }
-
-      else if (userText === "4" || userText.includes("download")) {
-        replyText = `📱 Download Paircel App
-
-https://paircel.com/get`;
-      }
-
-      else {
-        replyText = `⚡ I didn’t understand.
-
-Reply "menu" to see options.`;
-      }
-
-      // =========================
-      // SEND TO WHATSAPP
-      // =========================
-      const response = await fetch(
-        `https://graph.facebook.com/v20.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: from,
-            type: "text",
-            text: {
-              body: replyText,
-            },
-          }),
-        }
-      );
-
-      const result = await response.json();
-      console.log("WhatsApp result:", result);
-
-      return res.status(200).json({
-        ok: true,
-        sent: response.ok,
-      });
-
-    } catch (error) {
-      console.error("ERROR:", error);
-      return res.status(500).json({ error: "internal_error" });
+4️⃣ Get the App`;
     }
-  }
 
-  return res.status(405).send("Method Not Allowed");
+    await fetch(
+      `https://graph.facebook.com/v20.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: from,
+          type: "text",
+          text: { body: reply },
+        }),
+      }
+    );
+
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return res.status(200).json({ ok: false });
+  }
 }
